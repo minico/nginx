@@ -13,7 +13,7 @@ ngx_uint_t  ngx_pagesize;
 ngx_uint_t  ngx_pagesize_shift;
 ngx_uint_t  ngx_cacheline_size;
 
-
+//xjzhang 对malloc简单封装，申请失败时打log;
 void *
 ngx_alloc(size_t size, ngx_log_t *log)
 {
@@ -31,6 +31,7 @@ ngx_alloc(size_t size, ngx_log_t *log)
 }
 
 
+//xjzhang 相当于calloc的功能，申请失败时打log;
 void *
 ngx_calloc(size_t size, ngx_log_t *log)
 {
@@ -46,6 +47,7 @@ ngx_calloc(size_t size, ngx_log_t *log)
 }
 
 
+//xjzhang 申请size大小的内存，内存的地址以alignment对齐，也就是memalign的倍数；
 #if (NGX_HAVE_POSIX_MEMALIGN)
 
 void *

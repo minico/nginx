@@ -13,6 +13,7 @@ static void *ngx_palloc_block(ngx_pool_t *pool, size_t size);
 static void *ngx_palloc_large(ngx_pool_t *pool, size_t size);
 
 
+//xjzhang, 创建一个pool；
 ngx_pool_t *
 ngx_create_pool(size_t size, ngx_log_t *log)
 {
@@ -41,6 +42,7 @@ ngx_create_pool(size_t size, ngx_log_t *log)
 }
 
 
+//xjzhang, 销毁一个pool；
 void
 ngx_destroy_pool(ngx_pool_t *pool)
 {
@@ -48,6 +50,7 @@ ngx_destroy_pool(ngx_pool_t *pool)
     ngx_pool_large_t    *l;
     ngx_pool_cleanup_t  *c;
 
+	//xjzhang, 清理cleanup链表中的内存；
     for (c = pool->cleanup; c; c = c->next) {
         if (c->handler) {
             ngx_log_debug1(NGX_LOG_DEBUG_ALLOC, pool->log, 0,
@@ -56,6 +59,7 @@ ngx_destroy_pool(ngx_pool_t *pool)
         }
     }
 
+	//xjzhang, 释放large链表的内存；
     for (l = pool->large; l; l = l->next) {
 
         ngx_log_debug1(NGX_LOG_DEBUG_ALLOC, pool->log, 0, "free: %p", l->alloc);
@@ -82,7 +86,7 @@ ngx_destroy_pool(ngx_pool_t *pool)
     }
 
 #endif
-
+	//xjzhang, 释放pool链表中所有pool自身内存；
     for (p = pool, n = pool->d.next; /* void */; p = n, n = n->d.next) {
         ngx_free(p);
 
@@ -92,19 +96,21 @@ ngx_destroy_pool(ngx_pool_t *pool)
     }
 }
 
-
+//xjzhang, 将pool恢复到初建状态；
 void
 ngx_reset_pool(ngx_pool_t *pool)
 {
     ngx_pool_t        *p;
     ngx_pool_large_t  *l;
 
+	//xjzhang, 释放large内存；
     for (l = pool->large; l; l = l->next) {
         if (l->alloc) {
             ngx_free(l->alloc);
         }
     }
 
+	//xjzhang, 恢复初始状态；
     for (p = pool; p; p = p->d.next) {
         p->d.last = (u_char *) p + sizeof(ngx_pool_t);
         p->d.failed = 0;
@@ -116,12 +122,15 @@ ngx_reset_pool(ngx_pool_t *pool)
 }
 
 
+//xjzhang, 在pool中分配size大小的内存；
+//分配的时候需要进行地址对齐；
 void *
 ngx_palloc(ngx_pool_t *pool, size_t size)
 {
     u_char      *m;
     ngx_pool_t  *p;
 
+	//xjzhang, 如果所需内存比max小，则在pool自身内存中分配；
     if (size <= pool->max) {
 
         p = pool->current;
@@ -129,6 +138,8 @@ ngx_palloc(ngx_pool_t *pool, size_t size)
         do {
             m = ngx_align_ptr(p->d.last, NGX_ALIGNMENT);
 
+			//xjzhang, 如果当前pool空闲内存满足要求则分配并返回；
+			//否则继续从下一个pool中寻找；
             if ((size_t) (p->d.end - m) >= size) {
                 p->d.last = m + size;
 
@@ -139,13 +150,17 @@ ngx_palloc(ngx_pool_t *pool, size_t size)
 
         } while (p);
 
+		//如果pool链中所有pool都无法分配所需内存，则创建一个新的pool；
+		//从新pool中分配，并将新pool链接到指定的pool后面；
         return ngx_palloc_block(pool, size);
     }
 
+	//xjzhang, 如果所需内存比max大，则采用大内存块分配策略；
     return ngx_palloc_large(pool, size);
 }
 
-
+//xjzhang, 在pool中分配size大小的内存；功能同ngx_palloc()类似，
+//只是分配的时候无需进行地址对齐；
 void *
 ngx_pnalloc(ngx_pool_t *pool, size_t size)
 {
@@ -176,6 +191,8 @@ ngx_pnalloc(ngx_pool_t *pool, size_t size)
 }
 
 
+//xjzhang，创建一个新的pool，并在新pool中分配大小为size的内存返回；
+//同时将新建的pool链接到第一个参数指定的pool后面；
 static void *
 ngx_palloc_block(ngx_pool_t *pool, size_t size)
 {
@@ -200,12 +217,15 @@ ngx_palloc_block(ngx_pool_t *pool, size_t size)
     m = ngx_align_ptr(m, NGX_ALIGNMENT);
     new->d.last = m + size;
 
+	//xjzhang，如果在当前pool中申请内存失败超过4次，
+	//则将当前pool设置为链表中的下一个pool；
     for (p = pool->current; p->d.next; p = p->d.next) {
         if (p->d.failed++ > 4) {
             pool->current = p->d.next;
         }
     }
 
+	//xjzhang, 把新建的pool连到最后一个pool上；
     p->d.next = new;
 
     return m;

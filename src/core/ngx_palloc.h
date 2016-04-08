@@ -32,35 +32,37 @@ typedef void (*ngx_pool_cleanup_pt)(void *data);
 typedef struct ngx_pool_cleanup_s  ngx_pool_cleanup_t;
 
 struct ngx_pool_cleanup_s {
-    ngx_pool_cleanup_pt   handler;
+    ngx_pool_cleanup_pt   handler;//xjzhang, 用此handler清理data执行的内存；
     void                 *data;
-    ngx_pool_cleanup_t   *next;
+    ngx_pool_cleanup_t   *next;//xjzhang, 形成handler的链表
 };
 
 
 typedef struct ngx_pool_large_s  ngx_pool_large_t;
 
 struct ngx_pool_large_s {
-    ngx_pool_large_t     *next;
-    void                 *alloc;
+    ngx_pool_large_t     *next;//xjzhang,用来形成链表；
+    void                 *alloc;//xjzhang,执行分配的内存地址；
 };
 
 
 typedef struct {
-    u_char               *last;
-    u_char               *end;
-    ngx_pool_t           *next;
+    u_char               *last;//xjzhang,当前可用内存的起始地址；
+    u_char               *end;//xjzhang,内存池的结束地址；
+    ngx_pool_t           *next;//xjzhang,指向下一个pool；
     ngx_uint_t            failed;
 } ngx_pool_data_t;
 
 
 struct ngx_pool_s {
     ngx_pool_data_t       d;
+	//xjzhang,大小内存块的分界点；小于max
+	//的内存从d.last后面分配，大于max的内存用large管理；
     size_t                max;
-    ngx_pool_t           *current;
+    ngx_pool_t           *current;//xjzhang, 指向pool链表中的当前pool；
     ngx_chain_t          *chain;
-    ngx_pool_large_t     *large;
-    ngx_pool_cleanup_t   *cleanup;
+    ngx_pool_large_t     *large;//xjzhang, large链表；
+    ngx_pool_cleanup_t   *cleanup; //xjzhang, cleanup的链表；
     ngx_log_t            *log;
 };
 

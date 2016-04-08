@@ -8,6 +8,8 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
+//xjzhang, pool提供的内存相关API前面有个p，例如ngx_palloc, ngx_pmemalign, ngx_pfree, ngx_pcalloc...
+//表示通过pool操作内存
 
 static void *ngx_palloc_block(ngx_pool_t *pool, size_t size);
 static void *ngx_palloc_large(ngx_pool_t *pool, size_t size);
@@ -87,6 +89,8 @@ ngx_destroy_pool(ngx_pool_t *pool)
 
 #endif
 	//xjzhang, 释放pool链表中所有pool自身内存；
+	// 注意pool自身内存需要在释放large之后释放，
+	// 因为large结构体内存也是在pool中分配的；
     for (p = pool, n = pool->d.next; /* void */; p = n, n = n->d.next) {
         ngx_free(p);
 
@@ -103,7 +107,7 @@ ngx_reset_pool(ngx_pool_t *pool)
     ngx_pool_t        *p;
     ngx_pool_large_t  *l;
 
-	//xjzhang, 释放large内存；
+	//xjzhang, 释放large指向的内存；但不释放large结构本身；
     for (l = pool->large; l; l = l->next) {
         if (l->alloc) {
             ngx_free(l->alloc);
@@ -245,7 +249,7 @@ ngx_palloc_large(ngx_pool_t *pool, size_t size)
     }
 
     n = 0;
-
+	//寻找空闲的large块，如果前三个里面能找到空闲的就用空闲的；
     for (large = pool->large; large; large = large->next) {
         if (large->alloc == NULL) {
             large->alloc = p;
@@ -257,12 +261,15 @@ ngx_palloc_large(ngx_pool_t *pool, size_t size)
         }
     }
 
+	//xjzhang, 如果没有空闲的large块，就新建一个；
+	//注意，新建的large块用的是pool中的内存；
     large = ngx_palloc(pool, sizeof(ngx_pool_large_t));
     if (large == NULL) {
         ngx_free(p);
         return NULL;
     }
 
+	//xjzhang, 将新的large管理块插到链表开头；
     large->alloc = p;
     large->next = pool->large;
     pool->large = large;
@@ -271,6 +278,8 @@ ngx_palloc_large(ngx_pool_t *pool, size_t size)
 }
 
 
+//xjzhang，在pool中申请一个对齐的内存，
+//并且交给large块管理；
 void *
 ngx_pmemalign(ngx_pool_t *pool, size_t size, size_t alignment)
 {
@@ -295,7 +304,7 @@ ngx_pmemalign(ngx_pool_t *pool, size_t size, size_t alignment)
     return p;
 }
 
-
+//释放pool中由large块管理的内存；
 ngx_int_t
 ngx_pfree(ngx_pool_t *pool, void *p)
 {
@@ -315,7 +324,7 @@ ngx_pfree(ngx_pool_t *pool, void *p)
     return NGX_DECLINED;
 }
 
-
+//xjzhang, 在pool中申请size大小的内存，并初始化为0；
 void *
 ngx_pcalloc(ngx_pool_t *pool, size_t size)
 {
@@ -329,7 +338,7 @@ ngx_pcalloc(ngx_pool_t *pool, size_t size)
     return p;
 }
 
-
+//xjzhang, 加入一个cleanup；
 ngx_pool_cleanup_t *
 ngx_pool_cleanup_add(ngx_pool_t *p, size_t size)
 {
@@ -350,6 +359,7 @@ ngx_pool_cleanup_add(ngx_pool_t *p, size_t size)
         c->data = NULL;
     }
 
+	//将新的cleanup管理块查到链表头；
     c->handler = NULL;
     c->next = p->cleanup;
 
@@ -361,6 +371,8 @@ ngx_pool_cleanup_add(ngx_pool_t *p, size_t size)
 }
 
 
+//xjzhang, 从pool中关闭指定的fd文件描述符；
+//注意，并没有释放clearup管理块；
 void
 ngx_pool_run_cleanup_file(ngx_pool_t *p, ngx_fd_t fd)
 {
@@ -381,7 +393,7 @@ ngx_pool_run_cleanup_file(ngx_pool_t *p, ngx_fd_t fd)
     }
 }
 
-
+//xjzhang, 关闭指定的文件描述符；
 void
 ngx_pool_cleanup_file(void *data)
 {
@@ -396,7 +408,7 @@ ngx_pool_cleanup_file(void *data)
     }
 }
 
-
+//xjzhang, unlink并close指定的文件描述符；
 void
 ngx_pool_delete_file(void *data)
 {

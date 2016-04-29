@@ -12,13 +12,13 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+//xjzhang, 实现了一个动态可增长的array，功能类似vector;
 typedef struct {
-    void        *elts;
-    ngx_uint_t   nelts;
-    size_t       size;
-    ngx_uint_t   nalloc;
-    ngx_pool_t  *pool;
+    void        *elts;//xjzhang, 指向array起始位置；
+    ngx_uint_t   nelts;//xjzhang, 已经使用的array元素个数；
+    size_t       size;//xjzhang, array中个元素的个数；
+    ngx_uint_t   nalloc;//xjzhang, array中每个元素的大小；
+    ngx_pool_t  *pool;//xjzhang, array所在的pool；
 } ngx_array_t;
 
 

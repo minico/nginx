@@ -305,6 +305,8 @@ ngx_pmemalign(ngx_pool_t *pool, size_t size, size_t alignment)
 }
 
 //释放pool中由large块管理的内存；
+//在内存池本身通过ngx_palloc()分配的小内存块儿没有相应的释放接口(在内存池最后分配的内存可回收，可参考ngx_array_destroy())；
+//只能通过内存池的方式释放内存；
 ngx_int_t
 ngx_pfree(ngx_pool_t *pool, void *p)
 {

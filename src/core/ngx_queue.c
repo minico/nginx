@@ -9,6 +9,9 @@
 #include <ngx_core.h>
 
 
+//xjzhang, 找出queue的中间节点，利用“俩指针”法，一快一慢，
+//快指针一次走两步，慢指针一次走一步，当快指针指向queue尾部节点时，
+//慢指针指向的便是中间节点；
 /*
  * find the middle queue element if the queue has odd number of elements
  * or the first element of the queue's second part otherwise

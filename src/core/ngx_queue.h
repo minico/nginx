@@ -12,7 +12,8 @@
 #ifndef _NGX_QUEUE_H_INCLUDED_
 #define _NGX_QUEUE_H_INCLUDED_
 
-
+//xjzhang,  用双向循环链表实现了一个queue;
+//queue有头结点，头结点不存放数据；
 typedef struct ngx_queue_s  ngx_queue_t;
 
 struct ngx_queue_s {
@@ -20,16 +21,16 @@ struct ngx_queue_s {
     ngx_queue_t  *next;
 };
 
-
+//xjzhang,  初始化queue，只有一个头结点；
 #define ngx_queue_init(q)                                                     \
     (q)->prev = q;                                                            \
     (q)->next = q
 
-
+//xjzhang, 如果只有头节点则queue为空；
 #define ngx_queue_empty(h)                                                    \
     (h == (h)->prev)
 
-
+//xjzhang,在头结点h之后插入数据；
 #define ngx_queue_insert_head(h, x)                                           \
     (x)->next = (h)->next;                                                    \
     (x)->next->prev = x;                                                      \
@@ -39,18 +40,18 @@ struct ngx_queue_s {
 
 #define ngx_queue_insert_after   ngx_queue_insert_head
 
-
+//xjzhang,在queue h尾部插入数据；
 #define ngx_queue_insert_tail(h, x)                                           \
     (x)->prev = (h)->prev;                                                    \
     (x)->prev->next = x;                                                      \
     (x)->next = h;                                                            \
     (h)->prev = x
 
-
+//xjzhang,返回queue h的第一个数据节点；
 #define ngx_queue_head(h)                                                     \
     (h)->next
 
-
+//xjzhang,返回queue h的最后一个数据节点；
 #define ngx_queue_last(h)                                                     \
     (h)->prev
 
@@ -77,6 +78,7 @@ struct ngx_queue_s {
 
 #else
 
+//xjzhang, 移出节点x；
 #define ngx_queue_remove(x)                                                   \
     (x)->next->prev = (x)->prev;                                              \
     (x)->prev->next = (x)->next
@@ -92,7 +94,8 @@ struct ngx_queue_s {
     (h)->prev->next = h;                                                      \
     (q)->prev = n;
 
-
+//xjzhang, 将queue n接到queue h后面；
+//h和n指向的都是空的头结点；空节点n不会加入queue h中
 #define ngx_queue_add(h, n)                                                   \
     (h)->prev->next = (n)->next;                                              \
     (n)->next->prev = (h)->prev;                                              \

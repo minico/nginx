@@ -9,6 +9,7 @@
 #include <ngx_core.h>
 
 
+//xjzhang, 在pool中申请一块大小为size的内存由ngx_buf_t来管理；
 ngx_buf_t *
 ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
 {
@@ -43,7 +44,7 @@ ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
     return b;
 }
 
-
+//xjzhang, 从内存池中分配一个buf chain的管理块儿ngx_chain_t
 ngx_chain_t *
 ngx_alloc_chain_link(ngx_pool_t *pool)
 {
@@ -64,7 +65,8 @@ ngx_alloc_chain_link(ngx_pool_t *pool)
     return cl;
 }
 
-
+//xjzhang,为bufs参数中指定的buf分配内存，
+//并且将这些buff通过ngx_chain_t连接起来；
 ngx_chain_t *
 ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
 {
@@ -122,7 +124,8 @@ ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
     return chain;
 }
 
-
+//xjzhang,将参数in指定的buf链中的buf链接到参数chain中；
+//这样参数in中的buf就存在于两条buf链中了；
 ngx_int_t
 ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
 {
@@ -151,7 +154,7 @@ ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
     return NGX_OK;
 }
 
-
+//xjzhang,分配一块儿未使用的buffer；
 ngx_chain_t *
 ngx_chain_get_free_buf(ngx_pool_t *p, ngx_chain_t **free)
 {

@@ -102,7 +102,11 @@ static ngx_uint_t               ngx_thread_pool_task_id;
 static ngx_atomic_t             ngx_thread_pool_done_lock;
 static ngx_thread_pool_queue_t  ngx_thread_pool_done;
 
-
+//xjzhang,就是创建一个以ngx_thread_pool_cycle为入口的线程；
+//thread pool就是一个以ngx_thread_pool_cycle为入口的线程,
+//该线程不断的处理queue中的ngx_thread_task_t,
+//其它线程可以通过ngx_thread_task_post向queue中以非阻塞的方式post task；
+//这里面对task queue的访问使用的典型的条件变量和互斥变量进行互斥和同步；
 static ngx_int_t
 ngx_thread_pool_init(ngx_thread_pool_t *tp, ngx_log_t *log, ngx_pool_t *pool)
 {
@@ -219,7 +223,7 @@ ngx_thread_task_alloc(ngx_pool_t *pool, size_t size)
     return task;
 }
 
-
+//xjzhang,向线程池中以非阻塞的方式放入一个task；
 ngx_int_t
 ngx_thread_task_post(ngx_thread_pool_t *tp, ngx_thread_task_t *task)
 {
@@ -266,7 +270,7 @@ ngx_thread_task_post(ngx_thread_pool_t *tp, ngx_thread_task_t *task)
     return NGX_OK;
 }
 
-
+//xjzhang,线程池的处理函数；
 static void *
 ngx_thread_pool_cycle(void *data)
 {

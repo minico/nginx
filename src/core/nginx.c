@@ -212,6 +212,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+	//xjzhang,从命令行参数中获取配置项；
     if (ngx_get_options(argc, argv) != NGX_OK) {
         return 1;
     }
@@ -281,14 +282,18 @@ main(int argc, char *const *argv)
 
     /* TODO */ ngx_max_sockets = -1;
 
+	//xjzhang,对一些时间相关的全局变量进行初始化；
     ngx_time_init();
 
 #if (NGX_PCRE)
+	//xjzhang, 初始化PCRE内存申请和释放函数；
     ngx_regex_init();
 #endif
 
+	//xjzhang,获取nginx进程 pid；
     ngx_pid = ngx_getpid();
 
+	//xjzhang,初始化log相关变量，打开log文件；
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
         return 1;
@@ -296,6 +301,7 @@ main(int argc, char *const *argv)
 
     /* STUB */
 #if (NGX_OPENSSL)
+	//xjzhang,初始化SSL模块；
     ngx_ssl_init(log);
 #endif
 
@@ -304,6 +310,7 @@ main(int argc, char *const *argv)
      * ngx_process_options()
      */
 
+	//xjzhang, 初始化init_cycle,并为其分配内存池；
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
     ngx_cycle = &init_cycle;
@@ -313,14 +320,17 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+	//xjzhang,保存命令行参数；
     if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {
         return 1;
     }
 
+	//xjzhang,初始化进程相关选项；
     if (ngx_process_options(&init_cycle) != NGX_OK) {
         return 1;
     }
 
+	//xjzhang,初始化OS相关变量；
     if (ngx_os_init(log) != NGX_OK) {
         return 1;
     }
@@ -328,11 +338,12 @@ main(int argc, char *const *argv)
     /*
      * ngx_crc32_table_init() requires ngx_cacheline_size set in ngx_os_init()
      */
-
+	//xjzhang,初始化CRC32表格；
     if (ngx_crc32_table_init() != NGX_OK) {
         return 1;
     }
 
+	//xjzhang,将inherited sockets加入listening socket数组中；
     if (ngx_add_inherited_sockets(&init_cycle) != NGX_OK) {
         return 1;
     }
@@ -361,10 +372,12 @@ main(int argc, char *const *argv)
         return 0;
     }
 
+	//xjzhang,如果命令行或者配置文件中指定了signal，则给进程发送指定的signal；
     if (ngx_signal) {
         return ngx_signal_process(cycle, ngx_signal);
     }
 
+	//xjzhang,将OS相关信息写入log文件；
     ngx_os_status(cycle->log);
 
     ngx_cycle = cycle;
@@ -376,11 +389,12 @@ main(int argc, char *const *argv)
     }
 
 #if !(NGX_WIN32)
-
+	//xjzhang, 根据signals中指定的signal和action调用sigaction设置signal的handler；
     if (ngx_init_signals(cycle->log) != NGX_OK) {
         return 1;
     }
 
+	//xjzhang，根据配置将nginx设置为daemon进程；
     if (!ngx_inherited && ccf->daemon) {
         if (ngx_daemon(cycle->log) != NGX_OK) {
             return 1;
@@ -395,10 +409,12 @@ main(int argc, char *const *argv)
 
 #endif
 
+	//xjzhang, 创建一个以pid为名字的文件；
     if (ngx_create_pidfile(&ccf->pid, cycle->log) != NGX_OK) {
         return 1;
     }
 
+	//xjzhang,重定向error输出到log文件；
     if (ngx_log_redirect_stderr(cycle) != NGX_OK) {
         return 1;
     }
